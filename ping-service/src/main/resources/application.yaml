@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: ping-service
+server:
+  port: 8080
+# pong server request address
+pong:
+  server:
+    url: http://localhost:8081/pong
