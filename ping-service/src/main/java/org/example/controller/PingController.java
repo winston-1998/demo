@@ -1,7 +1,7 @@
 package org.example.controller;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,17 +17,15 @@ import reactor.core.publisher.Mono;
  * @create: 2024-06-20 00:10
  **/
 @Slf4j
+@AllArgsConstructor
 @RestController
 @RequestMapping("/ping")
 public class PingController {
+
     private final WebClient webClient;
-    @Autowired
-    public PingController(WebClient webClient) {
-        this.webClient = webClient;
-    }
 
     @GetMapping
-    public Mono<ResponseEntity<String>> sendPingRequest() {
+    public Mono<ResponseEntity<String>> sendRequestToPongService() {
         return webClient.get().retrieve()
                 .bodyToMono(String.class)
                 .map(response -> {

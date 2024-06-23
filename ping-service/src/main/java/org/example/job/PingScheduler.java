@@ -1,6 +1,5 @@
 package org.example.job;
 
-import cn.hutool.json.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.controller.PingController;
@@ -22,32 +21,37 @@ import java.nio.channels.FileLock;
 @AllArgsConstructor
 public class PingScheduler {
 
-    private static final String LOCK_FILE_PATH1 = System.getProperty("java.io.tmpdir") + File.separator + "pong-service-lock1";
-    private static final String LOCK_FILE_PATH2 = System.getProperty("java.io.tmpdir") + File.separator + "pong-service-lock2";
+    private static final String LOCK_FILE_PATH1 = System.getProperty("java.io.tmpdir") + File.separator + "shared-lock1";
+    private static final String LOCK_FILE_PATH2 = System.getProperty("java.io.tmpdir") + File.separator + "shared-lock2";
 
     private final PingController pingController;
+
     @Scheduled(fixedRate = 1000)
     public void run() {
+        try {
+            lockAndProcess();
+        } catch (Exception e) {
+            log.error("Error in run method: {}", e);
+        }
+    }
+
+    private void lockAndProcess() {
         try (RandomAccessFile lockFile = new RandomAccessFile(LOCK_FILE_PATH1, "rw");
-             FileChannel channel = lockFile.getChannel(); ) {
+             FileChannel channel = lockFile.getChannel();) {
             FileLock fileLock = channel.tryLock();
             if (fileLock != null) {
                 // 说明获取到了锁1
-                pingController.sendPingRequest().subscribe(response -> {
-                    log.info("Response: {}", JSONUtil.toJsonStr(response.getBody()) );
-                });
+                pingController.sendRequestToPongService();
                 fileLock.release();
             }
-        } catch (Exception  e) {
+        } catch (Exception e) {
             // 说明没获取到了锁1, 去抢锁2
             try (RandomAccessFile lockFile = new RandomAccessFile(LOCK_FILE_PATH2, "rw");
                  FileChannel channel = lockFile.getChannel();) {
                 FileLock fileLock = channel.tryLock();
                 if (fileLock != null) {
                     // 说明获取到了锁2
-                    pingController.sendPingRequest().subscribe(response -> {
-                        log.info("Response: {}", JSONUtil.toJsonStr(response.getBody()));
-                    });
+                    pingController.sendRequestToPongService();
                     fileLock.release();
                 }
             } catch (Exception exception) {
