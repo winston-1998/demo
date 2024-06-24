@@ -18,7 +18,7 @@ class PingSchedulerTest extends Specification {
 
     def "Three settings for concurrent requests. If the method is called twice, it means there is no problem."() {
         given:
-        pingController.sendRequestToPongService() >> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error"));
+        def mockResponse = Mock(Mono<ResponseEntity<String>>)
 
         when:
         def threads = (1..3).collect {
@@ -30,7 +30,7 @@ class PingSchedulerTest extends Specification {
         threads*.join()
 
         then:
-        3 * pingController.sendRequestToPongService()
+        2 * pingController.sendRequestToPongService() >> { mockResponse }
 
         and:
         noExceptionThrown()
@@ -39,9 +39,6 @@ class PingSchedulerTest extends Specification {
     def "Set three requests and execute them once per second. If the method is called three times, it means there is no problem."() {
         given:
         def mockResponse = Mock(Mono<ResponseEntity<String>>)
-        pingController.sendRequestToPongService() >> {
-            mockResponse
-        }
 
         when:
         3.times {
@@ -50,7 +47,7 @@ class PingSchedulerTest extends Specification {
         }
 
         then:
-        3 * pingController.sendRequestToPongService()
+        3 * pingController.sendRequestToPongService() >> { mockResponse }
 
         and:
         noExceptionThrown()
